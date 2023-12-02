@@ -63,6 +63,8 @@ fn main() {
                 apply_velocity,
                 move_paddle,
                 check_for_collisions,
+                shrink_ball_on_collision,
+                despawn_small_balls,
                 play_collision_sound,
             )
                 // `chain`ing systems together runs them in order
@@ -420,6 +422,33 @@ fn check_for_collisions(
             }
         }
     });
+}
+
+// on each ball collision with another ball, reduce the scale of the ball by 50%
+fn shrink_ball_on_collision(
+    collision_events: EventReader<CollisionEvent>,
+    mut ball_query: Query<(&mut Transform, &mut Velocity), With<Ball>>,
+) {
+    if !collision_events.is_empty() {
+        for (mut transform, mut velocity) in &mut ball_query.iter_mut() {
+            transform.scale *= 0.95;
+            velocity.0 *= 0.95;
+        }
+    }
+}
+
+// when scale is less than 10% of the original scale, despawn the ball
+fn despawn_small_balls(
+    mut commands: Commands,
+    mut ball_query: Query<(Entity, &Transform), With<Ball>>,
+) {
+    for (entity, transform) in &mut ball_query.iter_mut() {
+        if transform.scale.x < 2.0 {
+            //print
+            println!("Despawning ball");
+            commands.entity(entity).despawn();
+        }
+    }
 }
 
 fn play_collision_sound(
